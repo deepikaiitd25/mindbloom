@@ -26,38 +26,18 @@
   <h1 class="section-title">💬 Talk to Bloom</h1>
   <p class="section-sub">Bloom is a kind, friendly AI here to listen — no judgment, ever.</p>
 
-  <div id="key-setup" style="background:#FFF9E6; border:1px solid #F0D98A; border-radius:12px; padding:1.2rem 1.5rem; margin-bottom:1.5rem;">
-    <p style="font-size:14px; font-weight:600; color:#633806; margin-bottom:4px;">🔑 Enter your Cohere API Key to activate Bloom</p>
-    <p style="font-size:12px; color:#854F0B; margin-bottom:4px;">
-      Get a 100% free key at
-      <a href="https://dashboard.cohere.com/api-keys" target="_blank" style="color:#2D6A4F; font-weight:600;">dashboard.cohere.com/api-keys</a>
-    </p>
-    <p style="font-size:12px; color:#854F0B; margin-bottom:10px;">
-      Sign up free → API Keys → Copy your trial key. No billing, no credit card needed.
-    </p>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <input type="text" id="api-key-input" placeholder="Paste your Cohere key here..."
-        style="flex:1; min-width:200px; padding:8px 12px; border:1px solid #F0D98A; border-radius:8px; font-size:13px; font-family:monospace;" />
-      <button id="activate-btn"
-        style="padding:8px 18px; background:#2D6A4F; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer;">
-        Activate
-      </button>
-    </div>
-    <p id="key-status" style="font-size:12px; margin-top:8px; color:#854F0B;"></p>
-  </div>
-
   <div class="chat-container">
     <div class="chat-header">
       <div class="chat-avatar">🌸</div>
       <div>
         <h3>Bloom</h3>
-        <p id="bloom-status">Waiting for API key...</p>
+        <p id="bloom-status">Connecting...</p>
       </div>
     </div>
 
     <div class="chat-messages" id="chat-messages">
       <div class="msg msg-bot">
-        Hey there! I am Bloom 🌸 Add your Cohere API key above to start talking with me!
+        Hey there! I am Bloom 🌸 I am so glad you are here. How are you doing today — like, actually doing?
       </div>
     </div>
 
@@ -69,8 +49,8 @@
     </div>
 
     <div class="chat-input-row">
-      <input type="text" id="chat-input" placeholder="Enter your API key above first..." disabled />
-      <button class="send-btn" id="send-btn" disabled style="opacity:0.5;">&#9658;</button>
+      <input type="text" id="chat-input" placeholder="Type how you are feeling..." />
+      <button class="send-btn" id="send-btn">&#9658;</button>
     </div>
   </div>
 
@@ -90,10 +70,16 @@
 </footer>
 
 <script>
-  var API_KEY = '';
+  // -----------------------------------------------
+  // Paste your Cohere API key here
+  var API_KEY = 'lCgamHokbIRBuIhQlOV4G0kAV6m77BfKf9oqzPa1';
+  // -----------------------------------------------
+
   var chatHistory = [];
 
   var PREAMBLE = "You are Bloom, a compassionate and warm mental health companion on MindBloom, a wellness app for students and teenagers in India. Talk like a caring best friend or warm older sibling, never like a textbook or robot. Use natural conversational language, short sentences, real warmth. React to exactly what the user says and reference their specific words back to them. Ask only ONE follow-up question at a time. Validate feelings fully before any advice. Use gentle expressions like ugh that sounds really hard or hey that actually makes a lot of sense. Keep responses to 3-5 sentences so it feels like a real chat. If someone mentions self harm or suicide respond with deep care and share iCall helpline 9152987821. Never diagnose. Never give generic responses.";
+
+  document.getElementById('bloom-status').textContent = 'Online — here for you';
 
   function callCohere(userText, onSuccess, onError) {
     var cohereHistory = chatHistory.map(function(m) {
@@ -156,22 +142,10 @@
     if (el) el.remove();
   }
 
-  function unlockChat() {
-    document.getElementById('key-setup').style.display = 'none';
-    document.getElementById('bloom-status').textContent = 'Online — here for you';
-    var inp = document.getElementById('chat-input');
-    inp.disabled = false;
-    inp.placeholder = 'Type how you are feeling...';
-    var btn = document.getElementById('send-btn');
-    btn.disabled = false;
-    btn.style.opacity = '1';
-    document.getElementById('chat-messages').innerHTML = '';
-    addMessage("Hey! I'm Bloom 🌸 Really glad you're here. How are you doing today — like, actually doing?", 'bot');
-  }
-
   function sendToBloom(text) {
     addMessage(text, 'user');
     showTyping();
+    document.getElementById('chat-suggestions').style.display = 'none';
     callCohere(text,
       function(reply) { hideTyping(); addMessage(reply, 'bot'); },
       function(err) {
@@ -182,76 +156,24 @@
     );
   }
 
-  function activateKey() {
-    var input = document.getElementById('api-key-input').value.trim();
-    var status = document.getElementById('key-status');
-    if (!input) {
-      status.style.color = '#E24B4A';
-      status.textContent = 'Please paste your Cohere key first.';
-      return;
-    }
-    status.style.color = '#854F0B';
-    status.textContent = 'Connecting to Bloom...';
-    API_KEY = input;
-    chatHistory = [];
-
-    fetch('https://api.cohere.ai/v1/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + API_KEY,
-        'X-Client-Name': 'mindbloom'
-      },
-      body: JSON.stringify({
-        model: 'command-r-plus-08-2024',
-        message: 'hello',
-        preamble: PREAMBLE,
-        max_tokens: 10
-      })
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (data.message) {
-        API_KEY = '';
-        status.style.color = '#E24B4A';
-        status.textContent = 'Error: ' + data.message;
-        return;
-      }
-      unlockChat();
-    })
-    .catch(function(err) {
-      API_KEY = '';
-      status.style.color = '#E24B4A';
-      status.textContent = 'Connection failed: ' + err.message;
-      console.error(err);
-    });
-  }
-
-  document.getElementById('activate-btn').addEventListener('click', activateKey);
-  document.getElementById('api-key-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') activateKey();
-  });
   document.getElementById('send-btn').addEventListener('click', function() {
-    if (!API_KEY) return;
     var inp = document.getElementById('chat-input');
     var t = inp.value.trim();
     if (!t) return;
     inp.value = '';
-    document.getElementById('chat-suggestions').style.display = 'none';
     sendToBloom(t);
   });
+
   document.getElementById('chat-input').addEventListener('keydown', function(e) {
-    if (e.key !== 'Enter' || !API_KEY) return;
+    if (e.key !== 'Enter') return;
     var t = this.value.trim();
     if (!t) return;
     this.value = '';
-    document.getElementById('chat-suggestions').style.display = 'none';
     sendToBloom(t);
   });
+
   ['s1','s2','s3','s4'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function() {
-      if (!API_KEY) return;
-      document.getElementById('chat-suggestions').style.display = 'none';
       sendToBloom(this.textContent.trim());
     });
   });
