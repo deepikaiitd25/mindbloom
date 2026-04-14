@@ -91,35 +91,75 @@
   var API_KEY = '';
   var chatHistory = [];
 
-  var SYSTEM = "You are Bloom, a compassionate and warm mental health companion on MindBloom, a wellness app for students and teenagers in India. Talk like a caring best friend or warm older sibling — never like a textbook or robot. Use natural conversational language, short sentences, real warmth. React to exactly what the user says — reference their specific words back to them. Ask only ONE follow-up question at a time. Validate feelings fully before any advice. Use gentle expressions like ugh that sounds really hard or hey that actually makes a lot of sense. Keep responses to 3-5 sentences so it feels like a real chat. If someone mentions self harm or suicide respond with deep care and share iCall helpline 9152987821. Never diagnose. Never give generic responses.";
+  var SYSTEM = "You are Bloom, a compassionate and warm mental health companion on MindBloom, a wellness app for students and teenagers in India. Talk like a caring best friend or warm older sibling, never like a textbook or robot. Use natural conversational language, short sentences, real warmth. React to exactly what the user says and reference their specific words back to them. Ask only ONE follow-up question at a time. Validate feelings fully before any advice. Use gentle expressions like ugh that sounds really hard or hey that actually makes a lot of sense. Keep responses to 3-5 sentences so it feels like a real chat. If someone mentions self harm or suicide respond with deep care and share iCall helpline 9152987821. Never diagnose. Never give generic responses.";
 
-  function geminiURL() {
-    return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + API_KEY;
+  // Try models one by one until one works
+  var MODELS = [
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-pro'
+  ];
+
+  var workingModel = '';
+
+  function makeURL(model) {
+    return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + API_KEY;
   }
 
-  function buildBody(userText) {
-    chatHistory.push({ role: 'user', parts: [{ text: userText }] });
-    return JSON.stringify({
-      system_instruction: { parts: [{ text: SYSTEM }] },
-      contents: chatHistory,
-      generationConfig: { temperature: 0.9, maxOutputTokens: 300 }
-    });
-  }
-
-  function callGemini(userText, onSuccess, onError) {
-    fetch(geminiURL(), {
+  function callModel(model, body, onSuccess, onError) {
+    fetch(makeURL(model), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: buildBody(userText)
+      body: JSON.stringify(body)
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      if (data.error) { onError(data.error.message); return; }
-      var reply = data.candidates[0].content.parts[0].text;
+      if (data.error) { onError('API_ERROR: ' + data.error.message); return; }
+      if (!data.candidates || !data.candidates[0]) { onError('EMPTY'); return; }
+      onSuccess(data.candidates[0].content.parts[0].text);
+    })
+    .catch(function(err) { onError('FETCH: ' + err.message); });
+  }
+
+  function findWorkingModel(index, onSuccess, onError) {
+    if (index >= MODELS.length) {
+      onError('No working model found for your API key. Please make sure your key has no restrictions.');
+      return;
+    }
+    var model = MODELS[index];
+    document.getElementById('key-status').textContent = 'Trying model ' + model + '...';
+    var testBody = {
+      contents: [{ role: 'user', parts: [{ text: 'hi' }] }],
+      generationConfig: { maxOutputTokens: 5 }
+    };
+    callModel(model, testBody, function() {
+      workingModel = model;
+      onSuccess();
+    }, function(err) {
+      if (err.indexOf('FETCH') !== -1) {
+        onError('Connection failed. Make sure you are on the deployed GitHub Pages URL, not localhost.');
+      } else {
+        findWorkingModel(index + 1, onSuccess, onError);
+      }
+    });
+  }
+
+  function buildBody(text) {
+    chatHistory.push({ role: 'user', parts: [{ text: text }] });
+    return {
+      system_instruction: { parts: [{ text: SYSTEM }] },
+      contents: chatHistory,
+      generationConfig: { temperature: 0.9, maxOutputTokens: 300 }
+    };
+  }
+
+  function callGemini(text, onSuccess, onError) {
+    callModel(workingModel, buildBody(text), function(reply) {
       chatHistory.push({ role: 'model', parts: [{ text: reply }] });
       onSuccess(reply);
-    })
-    .catch(function(err) { onError(err.message); });
+    }, onError);
   }
 
   function addMessage(text, who) {
@@ -166,32 +206,41 @@
     showTyping();
     callGemini(text,
       function(reply) { hideTyping(); addMessage(reply, 'bot'); },
-      function(err) { hideTyping(); addMessage('Hmm, I had trouble responding — try again? 💚', 'bot'); console.error(err); }
+      function(err) {
+        hideTyping();
+        addMessage('Hmm, I had a little trouble — try again? 💚', 'bot');
+        console.error('Send error:', err);
+      }
     );
   }
 
   function activateKey() {
     var input = document.getElementById('api-key-input').value.trim();
     var status = document.getElementById('key-status');
-    if (!input) { status.style.color = '#E24B4A'; status.textContent = 'Please paste your key first.'; return; }
+    if (!input) {
+      status.style.color = '#E24B4A';
+      status.textContent = 'Please paste your key first.';
+      return;
+    }
     status.style.color = '#854F0B';
-    status.textContent = 'Connecting...';
+    status.textContent = 'Connecting to Bloom...';
     API_KEY = input;
     chatHistory = [];
-    callGemini('hello',
-      function() { unlockChat(); },
-      function(err) {
-        API_KEY = '';
-        chatHistory = [];
-        status.style.color = '#E24B4A';
-        status.textContent = 'Error: ' + err + ' — Please create a fresh API key in a NEW project at aistudio.google.com/apikey';
-      }
-    );
+    workingModel = '';
+    findWorkingModel(0, function() {
+      unlockChat();
+    }, function(err) {
+      API_KEY = '';
+      chatHistory = [];
+      status.style.color = '#E24B4A';
+      status.textContent = 'Error: ' + err;
+    });
   }
 
   document.getElementById('activate-btn').addEventListener('click', activateKey);
-  document.getElementById('api-key-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') activateKey(); });
-
+  document.getElementById('api-key-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') activateKey();
+  });
   document.getElementById('send-btn').addEventListener('click', function() {
     if (!API_KEY) return;
     var inp = document.getElementById('chat-input');
@@ -201,7 +250,6 @@
     document.getElementById('chat-suggestions').style.display = 'none';
     sendToBloom(t);
   });
-
   document.getElementById('chat-input').addEventListener('keydown', function(e) {
     if (e.key !== 'Enter' || !API_KEY) return;
     var t = this.value.trim();
@@ -210,7 +258,6 @@
     document.getElementById('chat-suggestions').style.display = 'none';
     sendToBloom(t);
   });
-
   ['s1','s2','s3','s4'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function() {
       if (!API_KEY) return;
