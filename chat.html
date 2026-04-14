@@ -27,14 +27,15 @@
   <p class="section-sub">Bloom is a kind, friendly AI here to listen — no judgment, ever.</p>
 
   <div id="key-setup" style="background:#FFF9E6; border:1px solid #F0D98A; border-radius:12px; padding:1.2rem 1.5rem; margin-bottom:1.5rem;">
-    <p style="font-size:14px; font-weight:600; color:#633806; margin-bottom:4px;">🔑 Enter your Gemini API Key to activate Bloom</p>
-    <p style="font-size:12px; color:#854F0B; margin-bottom:10px;">
+    <p style="font-size:14px; font-weight:600; color:#633806; margin-bottom:4px;">🔑 Enter your OpenAI API Key to activate Bloom</p>
+    <p style="font-size:12px; color:#854F0B; margin-bottom:4px;">
       Get a free key at
-      <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#2D6A4F; font-weight:600;">aistudio.google.com/apikey</a>
-      — Sign in → Create API Key in new project → Copy it
+      <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#2D6A4F; font-weight:600;">platform.openai.com/api-keys</a>
+      — Sign up → API Keys → Create new secret key
     </p>
+    <p style="font-size:12px; color:#854F0B; margin-bottom:10px;">New accounts get $5 free credits — no payment needed to start.</p>
     <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <input type="text" id="api-key-input" placeholder="Paste your key here e.g. AIzaSy..."
+      <input type="text" id="api-key-input" placeholder="Paste your key here e.g. sk-..."
         style="flex:1; min-width:200px; padding:8px 12px; border:1px solid #F0D98A; border-radius:8px; font-size:13px; font-family:monospace;" />
       <button id="activate-btn"
         style="padding:8px 18px; background:#2D6A4F; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer;">
@@ -55,7 +56,7 @@
 
     <div class="chat-messages" id="chat-messages">
       <div class="msg msg-bot">
-        Hey there! I am Bloom 🌸 Add your API key above to start talking with me!
+        Hey there! I am Bloom 🌸 Add your OpenAI API key above to start talking with me!
       </div>
     </div>
 
@@ -93,73 +94,31 @@
 
   var SYSTEM = "You are Bloom, a compassionate and warm mental health companion on MindBloom, a wellness app for students and teenagers in India. Talk like a caring best friend or warm older sibling, never like a textbook or robot. Use natural conversational language, short sentences, real warmth. React to exactly what the user says and reference their specific words back to them. Ask only ONE follow-up question at a time. Validate feelings fully before any advice. Use gentle expressions like ugh that sounds really hard or hey that actually makes a lot of sense. Keep responses to 3-5 sentences so it feels like a real chat. If someone mentions self harm or suicide respond with deep care and share iCall helpline 9152987821. Never diagnose. Never give generic responses.";
 
-  // Try models one by one until one works
-  var MODELS = [
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-pro'
-  ];
+  function callOpenAI(userText, onSuccess, onError) {
+    chatHistory.push({ role: 'user', content: userText });
+    var messages = [{ role: 'system', content: SYSTEM }].concat(chatHistory);
 
-  var workingModel = '';
-
-  function makeURL(model) {
-    return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + API_KEY;
-  }
-
-  function callModel(model, body, onSuccess, onError) {
-    fetch(makeURL(model), {
+    fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + API_KEY
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: messages,
+        max_tokens: 300,
+        temperature: 0.9
+      })
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      if (data.error) { onError('API_ERROR: ' + data.error.message); return; }
-      if (!data.candidates || !data.candidates[0]) { onError('EMPTY'); return; }
-      onSuccess(data.candidates[0].content.parts[0].text);
-    })
-    .catch(function(err) { onError('FETCH: ' + err.message); });
-  }
-
-  function findWorkingModel(index, onSuccess, onError) {
-    if (index >= MODELS.length) {
-      onError('No working model found for your API key. Please make sure your key has no restrictions.');
-      return;
-    }
-    var model = MODELS[index];
-    document.getElementById('key-status').textContent = 'Trying model ' + model + '...';
-    var testBody = {
-      contents: [{ role: 'user', parts: [{ text: 'hi' }] }],
-      generationConfig: { maxOutputTokens: 5 }
-    };
-    callModel(model, testBody, function() {
-      workingModel = model;
-      onSuccess();
-    }, function(err) {
-      if (err.indexOf('FETCH') !== -1) {
-        onError('Connection failed. Make sure you are on the deployed GitHub Pages URL, not localhost.');
-      } else {
-        findWorkingModel(index + 1, onSuccess, onError);
-      }
-    });
-  }
-
-  function buildBody(text) {
-    chatHistory.push({ role: 'user', parts: [{ text: text }] });
-    return {
-      system_instruction: { parts: [{ text: SYSTEM }] },
-      contents: chatHistory,
-      generationConfig: { temperature: 0.9, maxOutputTokens: 300 }
-    };
-  }
-
-  function callGemini(text, onSuccess, onError) {
-    callModel(workingModel, buildBody(text), function(reply) {
-      chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+      if (data.error) { onError(data.error.message); return; }
+      var reply = data.choices[0].message.content.trim();
+      chatHistory.push({ role: 'assistant', content: reply });
       onSuccess(reply);
-    }, onError);
+    })
+    .catch(function(err) { onError(err.message); });
   }
 
   function addMessage(text, who) {
@@ -204,12 +163,12 @@
   function sendToBloom(text) {
     addMessage(text, 'user');
     showTyping();
-    callGemini(text,
+    callOpenAI(text,
       function(reply) { hideTyping(); addMessage(reply, 'bot'); },
       function(err) {
         hideTyping();
         addMessage('Hmm, I had a little trouble — try again? 💚', 'bot');
-        console.error('Send error:', err);
+        console.error('Error:', err);
       }
     );
   }
@@ -222,19 +181,24 @@
       status.textContent = 'Please paste your key first.';
       return;
     }
+    if (!input.startsWith('sk-')) {
+      status.style.color = '#E24B4A';
+      status.textContent = 'OpenAI keys start with sk- — please check your key.';
+      return;
+    }
     status.style.color = '#854F0B';
     status.textContent = 'Connecting to Bloom...';
     API_KEY = input;
     chatHistory = [];
-    workingModel = '';
-    findWorkingModel(0, function() {
-      unlockChat();
-    }, function(err) {
-      API_KEY = '';
-      chatHistory = [];
-      status.style.color = '#E24B4A';
-      status.textContent = 'Error: ' + err;
-    });
+    callOpenAI('hello',
+      function() { unlockChat(); },
+      function(err) {
+        API_KEY = '';
+        chatHistory = [];
+        status.style.color = '#E24B4A';
+        status.textContent = 'Error: ' + err;
+      }
+    );
   }
 
   document.getElementById('activate-btn').addEventListener('click', activateKey);
