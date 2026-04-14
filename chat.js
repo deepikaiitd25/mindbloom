@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = 'AIzaSyB0WFGelstk72aCyS09hh5IRcH7nL7Eb4Y';
+const GEMINI_API_KEY = '';
 
 const SYSTEM_PROMPT = `You are Bloom, a warm, friendly, and compassionate AI counsellor on MindBloom — a mental health website for students and teenagers.
 Your personality:
