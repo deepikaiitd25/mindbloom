@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gratitude Journal — MindBloom</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">🌱 MindBloom</a>
+  <button class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="journal.html" class="active">Journal</a></li>
+    <li><a href="nutrition.html">Nutrition</a></li>
+    <li><a href="exercise.html">Exercise</a></li>
+    <li><a href="chat.html">Talk to Bloom</a></li>
+  </ul>
+</nav>
+
+<section class="section">
+  <h1 class="section-title">📓 Gratitude Journal</h1>
+  <p class="section-sub">A daily moment to pause, reflect, and appreciate your life.</p>
+
+  <div class="prompt-box">
+    <small>Today's prompt</small>
+    <p id="daily-prompt" style="font-size:1.15rem; color:#534AB7; font-weight:500; margin:6px 0 4px;"></p>
+    <small id="prompt-hint" style="color:#888780;"></small>
+  </div>
+
+  <textarea id="journal-textarea" placeholder="Write freely here... this is your safe space."></textarea>
+
+  <div style="display:flex; align-items:center; gap:1rem; margin-top:1rem; flex-wrap:wrap;">
+    <button id="save-btn" class="btn btn-primary">Save Entry 💚</button>
+    <span id="save-msg" style="display:none; font-size:14px; color:#2D6A4F; font-weight:500;"></span>
+  </div>
+
+  <div style="margin-top:2.5rem;">
+    <h2 style="font-size:1.2rem; color:#2D6A4F; margin-bottom:1rem;">Past Entries</h2>
+    <div id="entry-list"></div>
+  </div>
+</section>
+
+<footer>
+  <p>🌱 MindBloom &mdash; Made with care for student mental wellness.</p>
+  <p style="margin-top:8px; font-size:12px;">
+    In crisis? Call <a href="tel:9152987821">iCall: 9152987821</a> or
+    <a href="tel:1860-2662-345">Vandrevala Foundation: 1860-2662-345</a>
+  </p>
+</footer>
+
+<script>
+  var prompts = [
+    { prompt: "What made you smile today?", hint: "Even the tiniest thing counts." },
+    { prompt: "Name 3 things you are grateful for today.", hint: "Big or small, they all matter." },
+    { prompt: "What is one kind thing you did for yourself today?", hint: "Self-care shows up in many forms." },
+    { prompt: "What is something you are looking forward to?", hint: "Let your imagination wander." },
+    { prompt: "Who is someone that made your day better? How?", hint: "Appreciate the people around you." },
+    { prompt: "What is a challenge you faced today and how did you handle it?", hint: "Every challenge is a lesson." },
+    { prompt: "Write about a moment today where you felt at peace.", hint: "Even one second of peace is worth noting." },
+    { prompt: "What is one thing you love about yourself?", hint: "Be kind — you deserve your own love." },
+    { prompt: "What song, book, or movie made you feel good recently?", hint: "Good art nourishes the mind." },
+    { prompt: "If today had a color, what would it be and why?", hint: "Express yourself freely." },
+    { prompt: "What is one goal you have for tomorrow?", hint: "Small steps add up to big journeys." },
+    { prompt: "Describe your perfect calm day.", hint: "Visualizing peace can bring peace." },
+    { prompt: "What is something new you learned today?", hint: "Every day teaches us something." },
+    { prompt: "Write a letter to your future self.", hint: "What do you want them to know?" }
+  ];
+
+  var day = Math.floor(Date.now() / 86400000);
+  var todayPrompt = prompts[day % prompts.length];
+
+  document.getElementById('daily-prompt').textContent = todayPrompt.prompt;
+  document.getElementById('prompt-hint').textContent = todayPrompt.hint;
+
+  var STORAGE_KEY = 'mindbloom_journal';
+
+  function getEntries() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function saveEntry(prompt, text) {
+    if (!text.trim()) return false;
+    var entries = getEntries();
+    entries.unshift({
+      id: Date.now(),
+      date: new Date().toLocaleDateString('en-IN', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      }),
+      prompt: prompt,
+      text: text.trim()
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    return true;
+  }
+
+  function deleteEntry(id) {
+    var entries = getEntries().filter(function(e) { return e.id !== id; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    renderEntries();
+  }
+
+  function renderEntries() {
+    var list = document.getElementById('entry-list');
+    var entries = getEntries();
+    if (entries.length === 0) {
+      list.innerHTML = '<p style="color:#888780; font-size:14px;">No entries yet. Write your first one above!</p>';
+      return;
+    }
+    list.innerHTML = entries.map(function(e) {
+      return '<div class="entry-item">' +
+        '<div class="entry-date">' + e.date + '</div>' +
+        '<div class="entry-prompt">' + e.prompt + '</div>' +
+        '<div class="entry-text">' + e.text + '</div>' +
+        '<button onclick="deleteEntry(' + e.id + ')" style="margin-top:10px; font-size:12px; color:#E24B4A; background:none; border:none; cursor:pointer;">Delete</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  document.getElementById('save-btn').addEventListener('click', function() {
+    var ta = document.getElementById('journal-textarea');
+    var msg = document.getElementById('save-msg');
+    var saved = saveEntry(todayPrompt.prompt, ta.value);
+    if (saved) {
+      ta.value = '';
+      msg.style.display = 'block';
+      msg.style.color = '#2D6A4F';
+      msg.textContent = 'Beautiful entry! Keep it up 💚';
+      setTimeout(function() { msg.style.display = 'none'; }, 3000);
+      renderEntries();
+    } else {
+      msg.style.display = 'block';
+      msg.style.color = '#E24B4A';
+      msg.textContent = 'Please write something first.';
+      setTimeout(function() { msg.style.display = 'none'; }, 2000);
+    }
+  });
+
+  renderEntries();
+</script>
+
+</body>
+</html>

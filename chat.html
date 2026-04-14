@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Talk to Bloom — MindBloom</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">🌱 MindBloom</a>
+  <button class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="journal.html">Journal</a></li>
+    <li><a href="nutrition.html">Nutrition</a></li>
+    <li><a href="exercise.html">Exercise</a></li>
+    <li><a href="chat.html" class="active">Talk to Bloom</a></li>
+  </ul>
+</nav>
+
+<section class="section" style="max-width:800px;">
+  <h1 class="section-title">💬 Talk to Bloom</h1>
+  <p class="section-sub">Bloom is a kind, friendly AI here to listen — no judgment, ever.</p>
+
+  <div id="key-setup" style="background:#FFF9E6; border:1px solid #F0D98A; border-radius:12px; padding:1.2rem 1.5rem; margin-bottom:1.5rem;">
+    <p style="font-size:14px; font-weight:600; color:#633806; margin-bottom:4px;">🔑 Enter your Gemini API Key to activate Bloom</p>
+    <p style="font-size:12px; color:#854F0B; margin-bottom:10px;">
+      Get a free key at
+      <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#2D6A4F; font-weight:600;">aistudio.google.com/apikey</a>
+      — Sign in → Create API Key in new project → Copy it
+    </p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <input type="text" id="api-key-input" placeholder="Paste your key here e.g. AIzaSy..."
+        style="flex:1; min-width:200px; padding:8px 12px; border:1px solid #F0D98A; border-radius:8px; font-size:13px; font-family:monospace;" />
+      <button id="activate-btn"
+        style="padding:8px 18px; background:#2D6A4F; color:white; border:none; border-radius:8px; font-size:14px; cursor:pointer;">
+        Activate
+      </button>
+    </div>
+    <p id="key-status" style="font-size:12px; margin-top:8px; color:#854F0B;"></p>
+  </div>
+
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="chat-avatar">🌸</div>
+      <div>
+        <h3>Bloom</h3>
+        <p id="bloom-status">Waiting for API key...</p>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg msg-bot">
+        Hey there! I am Bloom 🌸 Add your API key above to start talking with me!
+      </div>
+    </div>
+
+    <div id="chat-suggestions" style="padding:0.8rem 1.2rem; display:flex; gap:8px; flex-wrap:wrap; border-top:1px solid rgba(0,0,0,0.08);">
+      <button class="suggestion-btn" id="s1">I am feeling anxious</button>
+      <button class="suggestion-btn" id="s2">I had a rough day</button>
+      <button class="suggestion-btn" id="s3">I feel lonely</button>
+      <button class="suggestion-btn" id="s4">I need motivation</button>
+    </div>
+
+    <div class="chat-input-row">
+      <input type="text" id="chat-input" placeholder="Enter your API key above first..." disabled />
+      <button class="send-btn" id="send-btn" disabled style="opacity:0.5;">&#9658;</button>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    Bloom is an AI and is not a replacement for professional mental health support.
+    If you are in crisis, please call <strong>iCall: 9152987821</strong> or
+    <strong>Vandrevala Foundation: 1860-2662-345</strong>.
+  </div>
+</section>
+
+<footer>
+  <p>🌱 MindBloom &mdash; Made with care for student mental wellness.</p>
+  <p style="margin-top:8px; font-size:12px;">
+    In crisis? Call <a href="tel:9152987821">iCall: 9152987821</a> or
+    <a href="tel:1860-2662-345">Vandrevala Foundation: 1860-2662-345</a>
+  </p>
+</footer>
+
+<script>
+  var API_KEY = '';
+  var chatHistory = [];
+
+  var SYSTEM = "You are Bloom, a compassionate and warm mental health companion on MindBloom, a wellness app for students and teenagers in India. Talk like a caring best friend or warm older sibling — never like a textbook or robot. Use natural conversational language, short sentences, real warmth. React to exactly what the user says — reference their specific words back to them. Ask only ONE follow-up question at a time. Validate feelings fully before any advice. Use gentle expressions like ugh that sounds really hard or hey that actually makes a lot of sense. Keep responses to 3-5 sentences so it feels like a real chat. If someone mentions self harm or suicide respond with deep care and share iCall helpline 9152987821. Never diagnose. Never give generic responses.";
+
+  function geminiURL() {
+    return 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' + API_KEY;
+  }
+
+  function buildBody(userText) {
+    chatHistory.push({ role: 'user', parts: [{ text: userText }] });
+    return JSON.stringify({
+      system_instruction: { parts: [{ text: SYSTEM }] },
+      contents: chatHistory,
+      generationConfig: { temperature: 0.9, maxOutputTokens: 300 }
+    });
+  }
+
+  function callGemini(userText, onSuccess, onError) {
+    fetch(geminiURL(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: buildBody(userText)
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data.error) { onError(data.error.message); return; }
+      var reply = data.candidates[0].content.parts[0].text;
+      chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+      onSuccess(reply);
+    })
+    .catch(function(err) { onError(err.message); });
+  }
+
+  function addMessage(text, who) {
+    var box = document.getElementById('chat-messages');
+    var div = document.createElement('div');
+    div.className = 'msg msg-' + who;
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function showTyping() {
+    var box = document.getElementById('chat-messages');
+    var old = document.getElementById('typing');
+    if (old) old.remove();
+    var div = document.createElement('div');
+    div.id = 'typing';
+    div.className = 'msg-typing';
+    div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function hideTyping() {
+    var el = document.getElementById('typing');
+    if (el) el.remove();
+  }
+
+  function unlockChat() {
+    document.getElementById('key-setup').style.display = 'none';
+    document.getElementById('bloom-status').textContent = 'Online — here for you';
+    var inp = document.getElementById('chat-input');
+    inp.disabled = false;
+    inp.placeholder = 'Type how you are feeling...';
+    var btn = document.getElementById('send-btn');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    document.getElementById('chat-messages').innerHTML = '';
+    addMessage("Hey! I'm Bloom 🌸 Really glad you're here. How are you doing today — like, actually doing?", 'bot');
+  }
+
+  function sendToBloom(text) {
+    addMessage(text, 'user');
+    showTyping();
+    callGemini(text,
+      function(reply) { hideTyping(); addMessage(reply, 'bot'); },
+      function(err) { hideTyping(); addMessage('Hmm, I had trouble responding — try again? 💚', 'bot'); console.error(err); }
+    );
+  }
+
+  function activateKey() {
+    var input = document.getElementById('api-key-input').value.trim();
+    var status = document.getElementById('key-status');
+    if (!input) { status.style.color = '#E24B4A'; status.textContent = 'Please paste your key first.'; return; }
+    status.style.color = '#854F0B';
+    status.textContent = 'Connecting...';
+    API_KEY = input;
+    chatHistory = [];
+    callGemini('hello',
+      function() { unlockChat(); },
+      function(err) {
+        API_KEY = '';
+        chatHistory = [];
+        status.style.color = '#E24B4A';
+        status.textContent = 'Error: ' + err + ' — Please create a fresh API key in a NEW project at aistudio.google.com/apikey';
+      }
+    );
+  }
+
+  document.getElementById('activate-btn').addEventListener('click', activateKey);
+  document.getElementById('api-key-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') activateKey(); });
+
+  document.getElementById('send-btn').addEventListener('click', function() {
+    if (!API_KEY) return;
+    var inp = document.getElementById('chat-input');
+    var t = inp.value.trim();
+    if (!t) return;
+    inp.value = '';
+    document.getElementById('chat-suggestions').style.display = 'none';
+    sendToBloom(t);
+  });
+
+  document.getElementById('chat-input').addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter' || !API_KEY) return;
+    var t = this.value.trim();
+    if (!t) return;
+    this.value = '';
+    document.getElementById('chat-suggestions').style.display = 'none';
+    sendToBloom(t);
+  });
+
+  ['s1','s2','s3','s4'].forEach(function(id) {
+    document.getElementById(id).addEventListener('click', function() {
+      if (!API_KEY) return;
+      document.getElementById('chat-suggestions').style.display = 'none';
+      sendToBloom(this.textContent.trim());
+    });
+  });
+</script>
+
+</body>
+</html>
