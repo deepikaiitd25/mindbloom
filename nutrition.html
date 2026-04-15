@@ -3,16 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nutrition for the Mind — MindBloom</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <title>Nutrition — MindBloom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --sage: #5C8A6B; --sage-dark: #3D6B52; --sage-deep: #1F3D2D;
+      --mint: #A8D4B8; --mint-pale: #E8F5EE;
+      --yellow: #F9C74F; --yellow-pale: #FFF8E7; --yellow-dark: #6B4C00;
+      --peach: #E8906A; --peach-pale: #FDF0EB;
+      --cream: #FAF7F2; --sand: #F0EAE0;
+      --text: #1A2E22; --muted: #6B8575;
+      --serif: 'DM Serif Display', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+    }
+    body { font-family: var(--sans); background: var(--cream); color: var(--text); line-height: 1.7; }
+
+    nav { position: sticky; top: 0; z-index: 999; display: flex; align-items: center; justify-content: space-between; padding: 0 3rem; height: 70px; background: rgba(250,247,242,0.95); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(92,138,107,0.12); }
+    .nav-logo { font-family: var(--serif); font-size: 1.5rem; color: var(--sage-dark); text-decoration: none; }
+    .nav-links { display: flex; gap: 4px; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--muted); padding: 8px 18px; border-radius: 50px; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+    .nav-links a:hover { background: var(--mint-pale); color: var(--sage-dark); }
+    .nav-links a.active { background: var(--sage-dark); color: white; }
+    .hamburger { display: none; background: none; border: none; cursor: pointer; flex-direction: column; gap: 5px; }
+    .hamburger span { width: 24px; height: 2px; background: var(--sage-dark); border-radius: 2px; display: block; }
+
+    .page-hero { background: linear-gradient(135deg, #E8F5EE 0%, #FFF8E7 60%, #FDF0EB 100%); padding: 4rem 2rem 3rem; text-align: center; border-bottom: 1px solid rgba(92,138,107,0.1); }
+    .page-hero h1 { font-family: var(--serif); font-size: clamp(2rem, 5vw, 3rem); color: var(--sage-deep); letter-spacing: -1px; margin-bottom: 0.5rem; }
+    .page-hero p { color: var(--muted); font-size: 1.05rem; max-width: 520px; margin: 0 auto; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 4rem 2rem 5rem; }
+
+    .section-heading { font-family: var(--serif); font-size: 1.8rem; color: var(--sage-deep); margin-bottom: 0.4rem; letter-spacing: -0.5px; }
+    .section-sub { color: var(--muted); font-size: 14px; margin-bottom: 2rem; }
+
+    .meal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; margin-bottom: 4rem; }
+
+    .meal-card { background: white; border-radius: 20px; padding: 1.8rem; box-shadow: 0 2px 20px rgba(0,0,0,0.05); border: 1px solid rgba(92,138,107,0.1); transition: transform 0.2s, box-shadow 0.2s; }
+    .meal-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(92,138,107,0.12); }
+
+    .meal-time { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--sage); margin-bottom: 1rem; padding-bottom: 0.8rem; border-bottom: 2px solid var(--mint-pale); display: flex; align-items: center; gap: 6px; }
+
+    .meal-card ul { list-style: none; }
+    .meal-card ul li { padding: 7px 0; border-bottom: 1px solid rgba(92,138,107,0.08); font-size: 14px; color: var(--text); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+    .meal-card ul li:last-child { border-bottom: none; }
+    .meal-card ul li::before { content: '✦'; color: var(--mint); font-size: 9px; flex-shrink: 0; }
+
+    .juice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.2rem; margin-bottom: 4rem; }
+
+    .juice-card { background: linear-gradient(135deg, var(--yellow-pale) 0%, #FFFAED 100%); border: 1.5px solid rgba(249,199,79,0.25); border-radius: 20px; padding: 1.8rem; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 2px 16px rgba(249,199,79,0.1); }
+    .juice-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(249,199,79,0.2); }
+    .juice-name { font-family: var(--serif); font-size: 1.2rem; color: var(--yellow-dark); margin-bottom: 0.4rem; }
+    .juice-ingredients { font-size: 13px; color: #8B6914; margin-bottom: 1rem; font-weight: 400; line-height: 1.5; }
+    .juice-benefit { font-size: 11px; font-weight: 700; background: var(--yellow); color: var(--yellow-dark); padding: 5px 14px; border-radius: 20px; display: inline-block; letter-spacing: 0.3px; }
+
+    .why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; }
+    .why-card { background: white; border-radius: 20px; padding: 2rem; border: 1px solid rgba(92,138,107,0.1); box-shadow: 0 2px 16px rgba(0,0,0,0.04); text-align: center; transition: transform 0.2s; }
+    .why-card:hover { transform: translateY(-4px); }
+    .why-card .icon { font-size: 2.2rem; margin-bottom: 1rem; display: block; }
+    .why-card h3 { font-size: 1rem; font-weight: 600; color: var(--sage-deep); margin-bottom: 0.5rem; }
+    .why-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    footer { background: var(--sage-deep); color: rgba(255,255,255,0.7); text-align: center; padding: 2.5rem 2rem; font-size: 14px; }
+    footer a { color: var(--mint); text-decoration: none; font-weight: 600; }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 1.5rem; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .nav-links.open { display: flex; flex-direction: column; position: fixed; top: 70px; left: 0; right: 0; background: var(--cream); padding: 1rem 1.5rem 2rem; border-bottom: 1px solid rgba(92,138,107,0.1); gap: 4px; }
+      .container { padding: 2.5rem 1.5rem 4rem; }
+    }
+  </style>
 </head>
 <body>
-
 <nav>
   <a href="index.html" class="nav-logo">🌱 MindBloom</a>
-  <button class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')">
-    <span></span><span></span><span></span>
-  </button>
+  <button class="hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')"><span></span><span></span><span></span></button>
   <ul class="nav-links">
     <li><a href="index.html">Home</a></li>
     <li><a href="journal.html">Journal</a></li>
@@ -22,35 +91,34 @@
   </ul>
 </nav>
 
-<section class="hero" style="padding:3rem 2rem 2rem;">
-  <h1 style="font-size:2rem;">🥗 Eat for your mind</h1>
-  <p>What you eat directly affects how you feel. Here's a daily plan full of mood-boosting, brain-nourishing foods.</p>
-</section>
+<div class="page-hero">
+  <h1>🥗 Eat for your mind</h1>
+  <p>What you eat directly shapes how you feel. Here's a daily plan full of mood-boosting, brain-nourishing foods.</p>
+</div>
 
-<section class="section">
-  <h2 class="section-title">Today's Meal Plan</h2>
+<div class="container">
+  <h2 class="section-heading">Today's Meal Plan</h2>
   <p class="section-sub">Designed to keep your energy stable and your mind calm all day.</p>
-
   <div class="meal-grid">
     <div class="meal-card">
-      <h4>🌅 Breakfast</h4>
+      <div class="meal-time">🌅 Breakfast</div>
       <ul>
         <li>Oatmeal with banana & honey</li>
         <li>A handful of walnuts</li>
-        <li>1 glass warm water with lemon</li>
+        <li>Warm lemon water</li>
         <li>Any seasonal fruit</li>
       </ul>
     </div>
     <div class="meal-card">
-      <h4>☀️ Mid-Morning Snack</h4>
+      <div class="meal-time">☀️ Mid-Morning</div>
       <ul>
-        <li>A bowl of blueberries or strawberries</li>
+        <li>Bowl of blueberries or strawberries</li>
         <li>Dark chocolate (1–2 squares)</li>
-        <li>Green tea or chamomile tea</li>
+        <li>Green tea or chamomile</li>
       </ul>
     </div>
     <div class="meal-card">
-      <h4>🌞 Lunch</h4>
+      <div class="meal-time">🌞 Lunch</div>
       <ul>
         <li>Brown rice or roti</li>
         <li>Dal with spinach (palak dal)</li>
@@ -59,83 +127,64 @@
       </ul>
     </div>
     <div class="meal-card">
-      <h4>🌙 Dinner</h4>
+      <div class="meal-time">🌙 Dinner</div>
       <ul>
         <li>Grilled paneer or eggs</li>
         <li>Stir-fried vegetables</li>
         <li>Whole wheat chapati</li>
-        <li>Warm turmeric milk (haldi doodh)</li>
+        <li>Warm turmeric milk</li>
       </ul>
     </div>
   </div>
 
-  <h2 class="section-title" style="margin-top:2.5rem;">🥤 Mood-Boosting Juices & Smoothies</h2>
+  <h2 class="section-heading">🥤 Mood-Boosting Juices & Smoothies</h2>
   <p class="section-sub">Drink your way to a calmer, happier mind.</p>
-
-  <div class="cards-grid">
+  <div class="juice-grid">
     <div class="juice-card">
-      <h4>Green Calm Smoothie</h4>
-      <p>Spinach, banana, almond milk, chia seeds, honey</p>
-      <span class="benefit">Reduces anxiety</span>
+      <div class="juice-name">Green Calm Smoothie</div>
+      <div class="juice-ingredients">Spinach, banana, almond milk, chia seeds, honey</div>
+      <span class="juice-benefit">Reduces anxiety</span>
     </div>
     <div class="juice-card">
-      <h4>Berry Brain Boost</h4>
-      <p>Blueberries, strawberries, yogurt, a dash of lemon juice</p>
-      <span class="benefit">Improves memory</span>
+      <div class="juice-name">Berry Brain Boost</div>
+      <div class="juice-ingredients">Blueberries, strawberries, yogurt, lemon juice</div>
+      <span class="juice-benefit">Improves memory</span>
     </div>
     <div class="juice-card">
-      <h4>Golden Mood Milk</h4>
-      <p>Warm milk, turmeric, black pepper, honey, cardamom</p>
-      <span class="benefit">Reduces stress</span>
+      <div class="juice-name">Golden Mood Milk</div>
+      <div class="juice-ingredients">Warm milk, turmeric, black pepper, honey, cardamom</div>
+      <span class="juice-benefit">Reduces stress</span>
     </div>
     <div class="juice-card">
-      <h4>Citrus Energy Burst</h4>
-      <p>Orange, carrot, ginger, a pinch of salt</p>
-      <span class="benefit">Boosts serotonin</span>
+      <div class="juice-name">Citrus Energy Burst</div>
+      <div class="juice-ingredients">Orange, carrot, ginger, a pinch of salt</div>
+      <span class="juice-benefit">Boosts serotonin</span>
     </div>
     <div class="juice-card">
-      <h4>Banana Oat Shake</h4>
-      <p>Banana, oats, peanut butter, milk, dates</p>
-      <span class="benefit">Stabilises mood</span>
+      <div class="juice-name">Banana Oat Shake</div>
+      <div class="juice-ingredients">Banana, oats, peanut butter, milk, dates</div>
+      <span class="juice-benefit">Stabilises mood</span>
     </div>
     <div class="juice-card">
-      <h4>Watermelon Mint Cooler</h4>
-      <p>Watermelon, fresh mint, lime juice, a pinch of black salt</p>
-      <span class="benefit">Hydrates & calms</span>
+      <div class="juice-name">Watermelon Mint Cooler</div>
+      <div class="juice-ingredients">Watermelon, fresh mint, lime juice, black salt</div>
+      <span class="juice-benefit">Hydrates & calms</span>
     </div>
   </div>
 
-  <h2 class="section-title" style="margin-top:2.5rem;">🧠 Why does food affect mental health?</h2>
-  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.2rem; margin-top:1rem;">
-    <div class="card">
-      <div class="card-icon">🫀</div>
-      <h3>Gut-Brain Connection</h3>
-      <p>About 90% of serotonin (the "happy chemical") is made in your gut. Good food = better mood.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">⚡</div>
-      <h3>Stable Blood Sugar</h3>
-      <p>Skipping meals causes energy crashes and mood swings. Eat regularly to stay emotionally balanced.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">🧬</div>
-      <h3>Brain Nutrients</h3>
-      <p>Omega-3s, Vitamin B, Magnesium, and Zinc directly support brain function and reduce anxiety.</p>
-    </div>
-    <div class="card">
-      <div class="card-icon">💧</div>
-      <h3>Hydration</h3>
-      <p>Even mild dehydration causes fatigue, poor concentration, and irritability. Drink 8 glasses a day.</p>
-    </div>
+  <h2 class="section-heading">🧠 Why food affects mental health</h2>
+  <p class="section-sub">The science behind eating well for your mind.</p>
+  <div class="why-grid">
+    <div class="why-card"><span class="icon">🫀</span><h3>Gut-Brain Connection</h3><p>About 90% of serotonin is made in your gut. Good food means a better mood.</p></div>
+    <div class="why-card"><span class="icon">⚡</span><h3>Stable Blood Sugar</h3><p>Skipping meals causes energy crashes and mood swings. Eat regularly.</p></div>
+    <div class="why-card"><span class="icon">🧬</span><h3>Brain Nutrients</h3><p>Omega-3s, Vitamin B, Magnesium and Zinc directly support brain health.</p></div>
+    <div class="why-card"><span class="icon">💧</span><h3>Hydration</h3><p>Even mild dehydration causes fatigue and irritability. Drink 8 glasses a day.</p></div>
   </div>
-</section>
+</div>
 
 <footer>
-  <p>🌱 MindBloom &mdash; Made with care for student mental wellness.</p>
-  <p style="margin-top:8px; font-size:12px;">
-    In crisis? Call <a href="tel:9152987821">iCall: 9152987821</a> or <a href="tel:1860-2662-345">Vandrevala Foundation: 1860-2662-345</a>
-  </p>
+  <p>🌱 MindBloom — Made with care for student mental wellness.</p>
+  <p style="margin-top:8px; font-size:12px;">In crisis? Call <a href="tel:9152987821">iCall: 9152987821</a> | <a href="tel:18602662345">Vandrevala: 1860-2662-345</a></p>
 </footer>
-
 </body>
 </html>
